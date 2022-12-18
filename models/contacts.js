@@ -16,63 +16,70 @@ const updateDataBase = async (updatedContacts) => {
 const listContacts = async () => {
   try {
     const data = await fs.readFile(dataFile);
-    return JSON.parse(data.toString());
+    const contacts = JSON.parse(data.toString());
+
+    return { data: contacts, message: "Contacts found", status: 200 };
   } catch (e) {
-    return new Error(e.message);
+    return { message: "Server error", status: 500 };
   }
 };
 
 const getContactById = async (contactId) => {
   try {
-    const contacts = await listContacts();
+    const { data: contacts } = await listContacts();
     const id = contactId.toString();
     const [contactById] = contacts.filter((contact) => contact.id === id);
-    return contactById;
+
+    if (!contactById) {
+      return { message: "Not found", status: 404 };
+    }
+
+    return { data: contactById, message: "Contact found", status: 200 };
   } catch (e) {
-    return new Error(e.message);
+    return { message: "Server error", status: 500 };
   }
 };
 
 const removeContact = async (contactId) => {
   try {
-    const contacts = await listContacts();
+    const { data: contacts } = await listContacts();
     const id = contactId.toString();
 
     const newContacts = contacts.filter((contact) => contact.id !== id);
 
-    if (JSON.stringify(contacts) !== JSON.stringify(newContacts)) {
-      await updateDataBase(newContacts);
+    if (JSON.stringify(contacts) === JSON.stringify(newContacts)) {
+      return { message: "Not found", status: 404 };
     }
 
-    return newContacts;
+    await updateDataBase(newContacts);
+
+    return { data: newContacts, message: "Contact deleted", status: 200 };
   } catch (e) {
-    return new Error(e.message);
+    return { message: "Server error", status: 500 };
   }
 };
 
 const addContact = async (body) => {
   try {
-    const contacts = await listContacts();
+    const { data: contacts } = await listContacts();
     const newContact = { ...body, id: nanoid() };
 
     contacts.push(newContact);
 
     await updateDataBase(contacts);
-    return newContact;
+    return {
+      data: newContact,
+      message: "Contact successfully added",
+      status: 200,
+    };
   } catch (e) {
-    return new Error(e.message);
+    return { message: "Server error", status: 500 };
   }
 };
 
 const updateContact = async (contactId, body = {}) => {
-  // const isEmpty = Object.keys(body).length === 0 && body.constructor === Object;
-  //
-  // if (isEmpty) {
-  //   return "Not found";
-  // }
-
   try {
-    const contacts = await listContacts();
+    const { data: contacts } = await listContacts();
     const id = contactId.toString();
     let updatedContact = {};
 
@@ -84,11 +91,19 @@ const updateContact = async (contactId, body = {}) => {
       return contact;
     });
 
+    if (JSON.stringify(contacts) === JSON.stringify(newContacts)) {
+      return { message: "Not found", status: 404 };
+    }
+
     await updateDataBase(newContacts);
 
-    return updatedContact;
+    return {
+      data: updatedContact,
+      message: "Contact successfully updated",
+      status: 200,
+    };
   } catch (e) {
-    return new Error(e.message);
+    return { message: "Server error", status: 500 };
   }
 };
 

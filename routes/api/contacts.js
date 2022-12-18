@@ -35,26 +35,17 @@ const updateContactSchema = Joi.object({
     // eslint-disable-next-line prefer-regex-literals
     new RegExp("^\\(?(\\d{3})\\)?[- ]?(\\d{3})[- ]?(\\d{4})$")
   ),
-}).required();
+}).and("name", "email", "phone");
 
 router.get("/", async (req, res, next) => {
-  const data = await listContacts();
-
-  const response = data
-    ? { data, message: "Success", status: 200 }
-    : { message: "Server problem", status: 500 };
+  const response = await listContacts();
 
   res.json(response);
 });
 
 router.get("/:contactId", async (req, res, next) => {
   const { contactId } = req.params;
-
-  const data = await getContactById(contactId);
-
-  const response = data
-    ? { data, message: "Success", status: 200 }
-    : { message: "Not found", status: 404 };
+  const response = await getContactById(contactId);
 
   res.json(response);
 });
@@ -63,26 +54,21 @@ router.post("/", async (req, res, next) => {
   const { error, value } = addContactSchema.validate(req.body);
 
   if (error) {
-    res.json({ message: "Missing required name field", status: 404 });
+    res.json({
+      message: "Missing required name field or invalid values",
+      status: 404,
+    });
     return;
   }
 
-  const data = await addContact(value);
-
-  const response = data
-    ? { data, message: "Success", status: 200 }
-    : { message: "Server problem", status: 500 };
+  const response = await addContact(value);
 
   res.json(response);
 });
 
 router.delete("/:contactId", async (req, res, next) => {
   const { contactId } = req.params;
-  const data = await removeContact(contactId);
-
-  const response = data
-    ? { data, message: "Success", status: 200 }
-    : { message: "Server problem", status: 500 };
+  const response = await removeContact(contactId);
 
   res.json(response);
 });
@@ -92,15 +78,13 @@ router.put("/:contactId", async (req, res, next) => {
   const { error, value } = updateContactSchema.validate(req.body);
 
   if (error) {
-    res.json({ message: "Should be at least one of fields", status: 404 });
+    res.json({ message: "Missing fields or invalid values", status: 404 });
     return;
   }
 
-  const data = await updateContact(contactId, value);
+  console.log("fuck schema");
 
-  const response = data
-    ? { data, message: "Success", status: 200 }
-    : { message: "Server problem", status: 500 };
+  const response = await updateContact(contactId, value);
 
   res.json(response);
 });
