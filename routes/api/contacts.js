@@ -82,8 +82,6 @@ router.put("/:contactId", async (req, res, next) => {
     return;
   }
 
-  console.log("fuck schema");
-
   const response = await updateContact(contactId, value);
 
   res.json(response);
