@@ -8,8 +8,8 @@ const {
   getContactById,
   removeContact,
   listContacts,
+  updateStatusContact,
 } = require("../../controller/contact.js");
-const { updateStatusContact } = require("../../controller/contact");
 
 router.get("/", listContacts);
 
