@@ -3,69 +3,59 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const { loginSchema, registerSchema } = require("../schemas/schemas");
+const HttpError = require("../middlewares/HttpError");
 const { SECRET_KEY } = process.env;
 
-const registration = async (req, res) => {
+const registration = async (req, res, next) => {
   try {
-    const { error, value } = registerSchema.validate(req.body);
+    const { error } = registerSchema.validate(req.body);
 
     if (error) {
-      res.json({
-        message: "Invalid values",
-        status: 404,
-      });
-      return;
+      next(404, error);
     }
 
-    const { email, password } = value;
+    const { email, password } = req.body;
 
-    const user = User.findOne({ email });
+    const user = await User.findOne({ email });
 
     if (user) {
-      res.json({ message: "Email in use", status: 409 });
-      return;
+      next(409, "Email in use");
     }
 
     const hashPassword = bcrypt.hashSync(password, 10);
 
     const newUser = await User.create({ ...req.body, password: hashPassword });
-
-    res.json({
+    console.log(newUser);
+    res.status(201).json({
       message: "Success",
-      status: 201,
-      data: { name: newUser.name, email: newUser.email },
+      data: { subscription: newUser.subscription, email: newUser.email },
     });
   } catch (e) {
-    res.json({ message: "Server error", status: 500 });
+    next(HttpError(500));
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { error, value } = loginSchema.validate(req.body);
 
     if (error) {
-      res.json({
-        message: "Invalid values",
-        status: 404,
-      });
+      next(404, error);
       return;
     }
 
     const { email, password } = value;
 
-    const user = User.findOne({ email });
+    const user = await User.findOne({ email });
 
     if (!user) {
-      res.json({ message: "Invalid email or password", status: 409 });
-      return;
+      next(409, "Invalid email or password");
     }
 
     const comparePassword = await bcrypt.compare(password, user.password);
 
     if (!comparePassword) {
-      res.json({ message: "Invalid email or password", status: 409 });
-      return;
+      next(409, "Invalid email or password");
     }
 
     const payload = {
@@ -84,7 +74,7 @@ const login = async (req, res) => {
       },
     });
   } catch (e) {
-    res.json({ message: "Server error", status: 500 });
+    next(HttpError(500));
   }
 };
 
