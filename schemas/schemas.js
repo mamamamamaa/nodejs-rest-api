@@ -1,5 +1,8 @@
 const Joi = require("joi");
 
+const emailRegEx =
+  /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
 const addContactSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string()
@@ -31,8 +34,21 @@ const updateStatusContactSchema = Joi.object({
   favorite: Joi.boolean().required(),
 }).required();
 
+const loginSchema = Joi.object({
+  email: Joi.string().pattern(emailRegEx).required(),
+  password: Joi.string().min(8).max(18).required(),
+});
+
+const registerSchema = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string().pattern(emailRegEx).required(),
+  password: Joi.string().min(8).max(18).required(),
+});
+
 module.exports = {
   addContactSchema,
   updateContactSchema,
   updateStatusContactSchema,
+  loginSchema,
+  registerSchema,
 };
