@@ -37,7 +37,7 @@ const updateStatusContactSchema = Joi.object({
 const loginSchema = Joi.object({
   email: Joi.string().pattern(emailRegEx).required(),
   password: Joi.string().min(8).max(18).required(),
-});
+}).required();
 
 const registerSchema = Joi.object({
   email: Joi.string().pattern(emailRegEx).required(),
@@ -45,6 +45,10 @@ const registerSchema = Joi.object({
   subscription: Joi.string()
     .valid("starter", "pro", "business")
     .default("starter"),
+}).required();
+
+const subscriptionSchema = Joi.object({
+  subscription: Joi.string().valid("starter", "pro", "business").required(),
 });
 
 module.exports = {
@@ -53,4 +57,5 @@ module.exports = {
   updateStatusContactSchema,
   loginSchema,
   registerSchema,
+  subscriptionSchema,
 };

@@ -2,7 +2,11 @@ const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const { loginSchema, registerSchema } = require("../schemas/schemas");
+const {
+  loginSchema,
+  registerSchema,
+  subscriptionSchema,
+} = require("../schemas/schemas");
 const HttpError = require("../middlewares/HttpError");
 const { SECRET_KEY } = process.env;
 
@@ -64,13 +68,17 @@ const login = async (req, res, next) => {
 
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "8h" });
 
+    await User.findByIdAndUpdate(user._id, { token });
+
     res.json({
       message: "Success",
       status: 201,
       data: {
         token,
-        name: user.name,
-        email: user.email,
+        user: {
+          email: user.email,
+          subscription: user.subscription,
+        },
       },
     });
   } catch (e) {
@@ -78,4 +86,35 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { login, registration };
+const changeSubscription = async (req, res, next) => {
+  const { _id } = req.user;
+  const { error, value } = subscriptionSchema.validate(req.body);
+
+  if (error) {
+    next(HttpError(409, "Invalid type of subscription"));
+  }
+
+  await User.findByIdAndUpdate(_id, value);
+
+  res.status(201).json({ message: "Success" });
+};
+
+const getCurrent = async (req, res) => {
+  const { email, subscription } = req.user;
+
+  res.json({ email, subscription });
+};
+
+const logout = async (req, res) => {
+  const { _id } = req.user;
+  await User.findByIdAndUpdate(_id, { token: null });
+  res.status(201).json({ message: "Logout success" });
+};
+
+module.exports = {
+  login,
+  registration,
+  getCurrent,
+  logout,
+  changeSubscription,
+};
