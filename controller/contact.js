@@ -1,78 +1,92 @@
-const Contact = require("../models/contact");
+const { Contact } = require("../models/contact");
+
 const {
   addContactSchema,
   updateContactSchema,
   updateStatusContactSchema,
 } = require("../schemas/schemas");
+const HttpError = require("../middlewares/HttpError");
 
-const listContacts = async (req, res) => {
+const listContacts = async (req, res, next) => {
+  const { _id: owner } = req.user;
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (page - 1) * limit;
   try {
-    const contacts = await Contact.find();
+    const contacts = await Contact.find({ owner }, "-createdAt -updatedAt", {
+      skip,
+      limit,
+    }).populate("owner", "email subscription");
     res.json(contacts);
   } catch (e) {
-    return res.json({ message: "Server error", status: 500 });
+    next(HttpError(500));
   }
 };
 
-const getContactById = async (req, res) => {
+const getContactById = async (req, res, next) => {
   try {
     const { contactId: id } = req.params;
+
     const contact = await Contact.findById(id);
 
-    res.json({ data: contact, message: "Contact found", status: 200 });
+    res.status(200).json({ data: contact, message: "Contact found" });
   } catch (e) {
-    res.json({ message: "Not found", status: 404 });
+    next(HttpError(404));
   }
 };
 
-const removeContact = async (req, res) => {
+const removeContact = async (req, res, next) => {
   try {
     const { contactId: id } = req.params;
 
     const removedContact = await Contact.findByIdAndRemove(id);
 
     if (!removedContact) {
-      res.json({ message: "Not found", status: 404 });
+      next(HttpError(404));
     }
 
-    res.json({ data: removedContact, message: "Contact deleted", status: 200 });
+    res.status(200).json({ data: removedContact, message: "Contact deleted" });
   } catch (e) {
-    res.json({ message: "Not found", status: 404 });
+    next(HttpError(404));
   }
 };
 
-const addContact = async (req, res) => {
+const addContact = async (req, res, next) => {
   try {
+    const { _id: owner } = req.user;
     const { error, value } = addContactSchema.validate(req.body);
 
     if (error) {
-      res.json({
-        message: "Missing required name field or invalid values",
-        status: 404,
-      });
-      return;
+      next(HttpError(404, "Missing required name field or invalid values"));
     }
 
-    const newContact = await Contact.create({ favorite: false, ...value });
+    const isExistContact = await Contact.findOne({ owner, email: value.email });
 
-    res.json({
+    if (isExistContact) {
+      next(HttpError(409, "This contact is already exist"));
+    }
+
+    const newContact = await Contact.create({
+      ...value,
+      owner,
+    });
+
+    res.status(200).json({
       data: newContact,
       message: "Contact successfully added",
-      status: 200,
     });
   } catch (e) {
-    res.json({ message: "Server error", status: 500 });
+    console.log(e.message);
+    next(HttpError(500));
   }
 };
 
-const updateContact = async (req, res) => {
+const updateContact = async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const { error, value } = updateContactSchema.validate(req.body);
 
     if (error) {
-      res.json({ message: "Missing fields or invalid values", status: 404 });
-      return;
+      next(HttpError(404, "Missing fields or invalid values"));
     }
 
     const oldContact = await Contact.findOneAndUpdate(
@@ -80,35 +94,32 @@ const updateContact = async (req, res) => {
       value
     );
 
-    res.json({
+    res.status(200).json({
       data: oldContact,
       message: "Contact successfully updated",
-      status: 200,
     });
   } catch (e) {
-    res.json({ message: "Not found", status: 404 });
+    next(HttpError(404));
   }
 };
 
-const updateStatusContact = async (req, res) => {
+const updateStatusContact = async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const { error, value } = updateStatusContactSchema.validate(req.body);
 
     if (error) {
-      res.json({ message: "Missing field favorite", status: 400 });
-      return;
+      next(HttpError(400, "Missing field favorite"));
     }
 
     const oldStatus = await Contact.findOneAndUpdate({ _id: contactId }, value);
 
-    res.json({
+    res.status(200).json({
       data: oldStatus,
       message: "Status successfully updated",
-      status: 200,
     });
   } catch (e) {
-    res.json({ message: "Not found", status: 404 });
+    next(HttpError(404));
   }
 };
 
