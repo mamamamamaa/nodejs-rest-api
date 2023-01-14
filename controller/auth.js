@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
 
 const {
   loginSchema,
@@ -13,7 +14,6 @@ const { SECRET_KEY } = process.env;
 const registration = async (req, res, next) => {
   try {
     const { error } = registerSchema.validate(req.body);
-
     if (error) {
       next(404, error);
     }
@@ -26,10 +26,14 @@ const registration = async (req, res, next) => {
       next(409, "Email in use");
     }
 
-    const hashPassword = bcrypt.hashSync(password, 10);
+    const hashPassword = await bcrypt.hashSync(password, 10);
+    const avatarURL = gravatar.url(email);
 
-    const newUser = await User.create({ ...req.body, password: hashPassword });
-    console.log(newUser);
+    const newUser = await User.create({
+      ...req.body,
+      password: hashPassword,
+      avatarURL,
+    });
     res.status(201).json({
       message: "Success",
       data: { subscription: newUser.subscription, email: newUser.email },
