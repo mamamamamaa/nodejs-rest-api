@@ -7,6 +7,7 @@ require("dotenv").config();
 
 const contactsRouter = require("./routes/api/contacts");
 const authRouter = require("./routes/api/auth");
+const usersRouter = require("./routes/api/users");
 
 const app = express();
 
@@ -15,11 +16,12 @@ const { HOST } = process.env;
 
 app.use(cors());
 app.use(logger(formatsLogger));
-// app.use(express.static("public"));
 app.use(express.json());
+app.use(express.static("public"));
 
 app.use("/api/contacts", contactsRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
 
 mongoose.set("strictQuery", true);
 mongoose.connect(HOST, () => console.log("DB is connect"));

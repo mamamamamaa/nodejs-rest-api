@@ -23,6 +23,4 @@ router.put("/:contactId", authenticate, updateContact);
 
 router.patch("/:contactId/favorite", authenticate, updateStatusContact);
 
-// router.post("/avatars", storage.single("avatar"), authenticate, addAvatar);
-
 module.exports = router;
