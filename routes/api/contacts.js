@@ -1,7 +1,7 @@
 const express = require("express");
-
 const router = express.Router();
 
+const authenticate = require("../../middlewares/authenticate");
 const {
   addContact,
   updateContact,
@@ -10,8 +10,6 @@ const {
   listContacts,
   updateStatusContact,
 } = require("../../controller/contact.js");
-
-const authenticate = require("../../middlewares/authenticate");
 
 router.get("/", authenticate, listContacts);
 
