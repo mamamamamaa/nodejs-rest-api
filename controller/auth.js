@@ -2,6 +2,7 @@ const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
+const { nanoid } = require("nanoid");
 
 const {
   loginSchema,
@@ -28,15 +29,21 @@ const registration = async (req, res, next) => {
 
     const hashPassword = await bcrypt.hashSync(password, 10);
     const avatarURL = gravatar.url(email);
+    const verificationToken = nanoid();
 
     const newUser = await User.create({
       ...req.body,
       password: hashPassword,
       avatarURL,
+      verificationToken,
     });
+
     res.status(201).json({
       message: "Success",
-      data: { subscription: newUser.subscription, email: newUser.email },
+      data: {
+        subscription: newUser.subscription,
+        email: newUser.email,
+      },
     });
   } catch (e) {
     next(HttpError(500));
@@ -58,6 +65,10 @@ const login = async (req, res, next) => {
 
     if (!user) {
       next(409, "Invalid email or password");
+    }
+
+    if (!user.verify) {
+      next(409, "You are not verified");
     }
 
     const comparePassword = await bcrypt.compare(password, user.password);
