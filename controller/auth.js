@@ -13,7 +13,9 @@ const {
   loginSchema,
   registerSchema,
   subscriptionSchema,
+  reverifySchema,
 } = require("../schemas/schemas");
+const { verificationMessage } = require("../helpers/verificationMessage");
 
 const { SECRET_KEY, SENDGRID_API_KEY, MY_EMAIL, BASE_URL } = process.env;
 
@@ -36,15 +38,7 @@ const registration = async (req, res, next) => {
 
     const hashPassword = await bcrypt.hashSync(password, 10);
     const avatarURL = gravatar.url(email);
-    const verificationToken = nanoid();
-
-    const verifyMessage = {
-      to: email,
-      from: MY_EMAIL,
-      subject: "Verification code",
-      text: "To verify your account you should click on link bellow",
-      html: `<a target="_blank" href="${BASE_URL}/api/auth/verify/${verificationToken}">Click verify email</a>`,
-    };
+    const { verifyMessage, verificationToken } = verificationMessage(email);
 
     await sgMail.send(verifyMessage);
 
@@ -65,6 +59,30 @@ const registration = async (req, res, next) => {
   } catch (e) {
     next(HttpError(500));
   }
+};
+
+const reverify = async (req, res, next) => {
+  const { error, value: email } = reverifySchema.validate(req.body);
+
+  if (error) {
+    next(HttpError(400, "Missing required field email"));
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    next(HttpError(400, "User is not registered"));
+  }
+
+  if (user.verify) {
+    next(HttpError(400, "Verification has already been passed"));
+  }
+
+  const { verifyMessage } = verificationMessage(email);
+
+  await sgMail.send(verifyMessage);
+
+  res.status(200).json({ message: "Verification mail has successfully send" });
 };
 
 const login = async (req, res, next) => {
@@ -195,4 +213,5 @@ module.exports = {
   changeSubscription,
   changeAvatar,
   verify,
+  reverify,
 };
