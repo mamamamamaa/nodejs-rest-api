@@ -6,7 +6,6 @@ const jwt = require("jsonwebtoken");
 const fs = require("fs").promises;
 const path = require("path");
 const gravatar = require("gravatar");
-const { nanoid } = require("nanoid");
 const sgMail = require("@sendgrid/mail");
 
 const {
@@ -17,7 +16,7 @@ const {
 } = require("../schemas/schemas");
 const { verificationMessage } = require("../helpers/verificationMessage");
 
-const { SECRET_KEY, SENDGRID_API_KEY, MY_EMAIL, BASE_URL } = process.env;
+const { SECRET_KEY, SENDGRID_API_KEY } = process.env;
 
 sgMail.setApiKey(SENDGRID_API_KEY);
 
