@@ -51,6 +51,10 @@ const subscriptionSchema = Joi.object({
   subscription: Joi.string().valid("starter", "pro", "business").required(),
 });
 
+const reverifySchema = Joi.object({
+  email: Joi.string().pattern(emailRegEx).required(),
+}).required();
+
 module.exports = {
   addContactSchema,
   updateContactSchema,
@@ -58,4 +62,5 @@ module.exports = {
   loginSchema,
   registerSchema,
   subscriptionSchema,
+  reverifySchema,
 };
